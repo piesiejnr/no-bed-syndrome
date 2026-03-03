@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+{% load static %}
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Booking Management - Admin</title>
+    <link rel="stylesheet" href="{% static 'css/admin-styles.css' %}">
+</head>
+<body data-hospital-id="{{ hospital.id }}" data-admin-name="{{ request.session.admin_name|default:'' }}">
+    <div class="admin-container">
+        <!-- Sidebar Navigation -->
+        <aside class="admin-sidebar">
+            <div class="sidebar-header">
+                <h2>🏥 Admin Panel</h2>
+            </div>
+
+            <nav class="sidebar-nav">
+                <a href="{% url 'admins:dashboard' %}" class="nav-item">
+                    <span class="icon">📊</span>
+                    <span>Dashboard</span>
+                </a>
+                <a href="{% url 'admins:bed_management' %}" class="nav-item">
+                    <span class="icon">🛏️</span>
+                    <span>Bed Management</span>
+                </a>
+                <a href="{% url 'admins:booking_management' %}" class="nav-item active">
+                    <span class="icon">📋</span>
+                    <span>Bookings</span>
+                </a>
+                <a href="{% url 'admins:hospital_profile' %}" class="nav-item">
+                    <span class="icon">⚙️</span>
+                    <span>Hospital Profile</span>
+                </a>
+                <a href="{% url 'admins:activity_logs' %}" class="nav-item">
+                    <span class="icon">📝</span>
+                    <span>Activity Logs</span>
+                </a>
+            </nav>
+
+            <div class="sidebar-footer">
+                <a href="{% url 'admins:logout' %}" class="btn btn-secondary btn-block">
+                    Logout
+                </a>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="admin-main">
+            <!-- Top Bar -->
+            <div class="admin-topbar">
+                <h1>Booking Management</h1>
+            </div>
+
+            <!-- Page Content -->
+            <div class="admin-content">
+                {% if messages %}
+                    <div class="messages">
+                        {% for message in messages %}
+                            <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+
+                <section class="admin-section">
+                    <div class="section-header">
+                        <h2>Bookings</h2>
+                        <button type="button" class="btn btn-primary" id="openAddBooking">➕ Add Booking</button>
+                    </div>
+
+                    <div class="filters-bar">
+                        <div class="form-group">
+                            <label for="filterInput">Search</label>
+                            <input type="text" id="filterInput" class="form-control" placeholder="Search by name or contact">
+                        </div>
+                        <div class="form-group">
+                            <label for="statusFilter">Status</label>
+                            <select id="statusFilter" class="form-control">
+                                <option value="">All</option>
+                                <option value="active">Active</option>
+                                <option value="confirmed">Confirmed</option>
+                                <option value="expired">Expired</option>
+                                <option value="cancelled">Cancelled</option>
+                            </select>
+                        </div>
+                        <div class="form-actions">
+                            <button type="button" class="btn btn-secondary" id="clearFilters">Clear Filters</button>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Bookings Table -->
+                <section class="admin-section">
+                    <div class="table-container">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Booking ID</th>
+                                    <th>Patient Name</th>
+                                    <th>Contact</th>
+                                    <th>Bed Type</th>
+                                    <th>Booked Date</th>
+                                    <th>Expiry Date</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="bookingsTableBody">
+                                {% for booking in bookings %}
+                                    <tr data-booking-id="{{ booking.id }}"
+                                        data-name="{{ booking.name|lower }}"
+                                        data-contact="{{ booking.contact|lower }}"
+                                        data-status="{{ booking.status }}"
+                                        data-bed-type="{{ booking.get_bed_type_display }}"
+                                        data-booked-at="{{ booking.booked_at|date:"M d, Y H:i" }}"
+                                        data-expires-at="{{ booking.expires_at|date:"M d, Y H:i" }}">
+                                        <td>{{ booking.id }}</td>
+                                        <td>{{ booking.name }}</td>
+                                        <td>{{ booking.contact }}</td>
+                                        <td><span class="bed-type-badge">{{ booking.get_bed_type_display }}</span></td>
+                                        <td>{{ booking.booked_at|date:"M d, Y H:i" }}</td>
+                                        <td>{{ booking.expires_at|date:"M d, Y H:i" }}</td>
+                                        <td><span class="status-badge {{ booking.status }}">{{ booking.get_status_display }}</span></td>
+                                        <td class="action-buttons">
+                                            <button type="button" class="btn btn-tiny" data-booking-action="view">View</button>
+                                            {% if booking.status != 'confirmed' and booking.status != 'cancelled' %}
+                                                <button type="button" class="btn btn-tiny btn-success" data-booking-action="confirm">Confirm</button>
+                                            {% endif %}
+                                            {% if booking.status != 'cancelled' %}
+                                                <button type="button" class="btn btn-tiny btn-danger" data-booking-action="cancel">Cancel</button>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                {% empty %}
+                                    <tr><td colspan="8" class="empty-message">No bookings found</td></tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+            </div>
+        </main>
+    </div>
+
+    <!-- Add Booking Modal -->
+    <div id="addBookingModal" class="modal" style="display: none;">
+        <div class="modal-content modal-lg">
+            <div class="modal-header">
+                <h2>Add New Booking</h2>
+                <button class="modal-close" onclick="closeModal('addBookingModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form method="POST" action="{% url 'admins:create_booking' %}">
+                    {% csrf_token %}
+                    <div class="form-group">
+                        <label>Patient/Requester Name *</label>
+                        <input type="text" id="bookingName" name="name" class="form-control" required>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Contact Number *</label>
+                            <input type="tel" id="bookingContact" name="contact" class="form-control" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Bed Type *</label>
+                            <select id="bookingBedType" name="bed_type" class="form-control" required>
+                                <option value="">-- Select Bed Type --</option>
+                                <option value="general">General Ward</option>
+                                <option value="hdu">HDU</option>
+                                <option value="icu">ICU</option>
+                                <option value="emergency">Emergency</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Notes (Optional)</label>
+                        <textarea id="bookingNotes" name="notes" class="form-control" rows="3"></textarea>
+                    </div>
+
+                    <p class="info-text">Reservation duration: {{ reservation_duration }} minutes.</p>
+
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary">Create Booking</button>
+                        <button type="button" class="btn btn-secondary" onclick="closeModal('addBookingModal')">Cancel</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Booking Details Modal -->
+    <div id="bookingDetailsModal" class="modal" style="display: none;">
+        <div class="modal-content modal-lg">
+            <div class="modal-header">
+                <h2>Booking Details</h2>
+                <button class="modal-close" onclick="closeModal('bookingDetailsModal')">&times;</button>
+            </div>
+            <div class="modal-body" id="bookingDetailsBody">
+                <!-- Generated by JavaScript -->
+            </div>
+        </div>
+    </div>
+
+    <script src="{% static 'js/admin-script.js' %}"></script>
+    <script>
+        function getCookie(name) {
+            const value = document.cookie;
+            const parts = value.split(`; ${name}=`);
+            if (parts.length === 2) return parts.pop().split(';').shift();
+            return '';
+        }
+
+        async function postBookingAction(bookingId, action) {
+            const token = getCookie('csrftoken');
+            const url = `/portal/bookings/${bookingId}/${action}/`;
+
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': token,
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error(`Request failed with status ${response.status}`);
+            }
+
+            const data = await response.json();
+            if (!data.ok) {
+                throw new Error(data.error || 'Action failed');
+            }
+
+            window.location.reload();
+        }
+
+        function applyBookingFilters() {
+            const input = document.getElementById('filterInput');
+            const statusFilter = document.getElementById('statusFilter');
+            const query = (input ? input.value : '').toLowerCase().trim();
+            const status = statusFilter ? statusFilter.value : '';
+
+            document.querySelectorAll('#bookingsTableBody tr[data-booking-id]').forEach((row) => {
+                const name = row.dataset.name || '';
+                const contact = row.dataset.contact || '';
+                const rowStatus = row.dataset.status || '';
+                const matchesText = !query || name.includes(query) || contact.includes(query);
+                const matchesStatus = !status || rowStatus === status;
+                row.style.display = matchesText && matchesStatus ? '' : 'none';
+            });
+        }
+
+        function openBookingDetails(row) {
+            const body = document.getElementById('bookingDetailsBody');
+            if (!body) return;
+
+            const details = {
+                id: row.dataset.bookingId || '',
+                name: row.children[1]?.textContent || '',
+                contact: row.children[2]?.textContent || '',
+                bedType: row.dataset.bedType || '',
+                bookedAt: row.dataset.bookedAt || '',
+                expiresAt: row.dataset.expiresAt || '',
+                status: row.dataset.status || ''
+            };
+
+            body.innerHTML = `
+                <div class="booking-details-card">
+                    <div class="detail-row"><span class="detail-label">Booking ID:</span><span class="detail-value">${details.id}</span></div>
+                    <div class="detail-row"><span class="detail-label">Patient Name:</span><span class="detail-value">${details.name}</span></div>
+                    <div class="detail-row"><span class="detail-label">Contact:</span><span class="detail-value">${details.contact}</span></div>
+                    <div class="detail-row"><span class="detail-label">Bed Type:</span><span class="detail-value">${details.bedType}</span></div>
+                    <div class="detail-row"><span class="detail-label">Booked At:</span><span class="detail-value">${details.bookedAt}</span></div>
+                    <div class="detail-row"><span class="detail-label">Expires At:</span><span class="detail-value">${details.expiresAt}</span></div>
+                    <div class="detail-row"><span class="detail-label">Status:</span><span class="detail-value">${details.status}</span></div>
+                    <div class="modal-actions">
+                        <button class="btn btn-secondary" onclick="closeModal('bookingDetailsModal')">Close</button>
+                    </div>
+                </div>
+            `;
+
+            document.getElementById('bookingDetailsModal').style.display = 'block';
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const session = getAdminSession();
+            if (!session) {
+                window.location.href = getAdminLoginUrl();
+                return;
+            }
+
+            const addButton = document.getElementById('openAddBooking');
+            if (addButton) {
+                addButton.addEventListener('click', () => {
+                    document.getElementById('addBookingModal').style.display = 'block';
+                    document.getElementById('bookingName').focus();
+                });
+            }
+
+            const filterInput = document.getElementById('filterInput');
+            const statusFilter = document.getElementById('statusFilter');
+            const clearFilters = document.getElementById('clearFilters');
+
+            if (filterInput) filterInput.addEventListener('input', applyBookingFilters);
+            if (statusFilter) statusFilter.addEventListener('change', applyBookingFilters);
+            if (clearFilters) {
+                clearFilters.addEventListener('click', () => {
+                    if (filterInput) filterInput.value = '';
+                    if (statusFilter) statusFilter.value = '';
+                    applyBookingFilters();
+                });
+            }
+
+            document.querySelectorAll('[data-booking-action]').forEach((button) => {
+                button.addEventListener('click', async () => {
+                    const row = button.closest('tr');
+                    const bookingId = row ? row.dataset.bookingId : null;
+                    const action = button.dataset.bookingAction;
+
+                    if (!bookingId || !action) return;
+                    if (action === 'view') {
+                        openBookingDetails(row);
+                        return;
+                    }
+                    if (action === 'cancel' && !confirm('Cancel this booking?')) return;
+
+                    try {
+                        await postBookingAction(bookingId, action);
+                    } catch (error) {
+                        alert(error.message || 'Action failed');
+                    }
+                });
+            });
+        });
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).style.display = 'none';
+        }
+    </script>
+</body>
+</html>

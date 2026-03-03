@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+{% load static %}
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Activity Logs - Admin</title>
+    <link rel="stylesheet" href="{% static 'css/admin-styles.css' %}">
+</head>
+<body data-hospital-id="{{ hospital.id }}" data-admin-name="{{ request.session.admin_name|default:'' }}">
+    <div class="admin-container">
+        <!-- Sidebar Navigation -->
+        <aside class="admin-sidebar">
+            <div class="sidebar-header">
+                <h2>🏥 Admin Panel</h2>
+            </div>
+
+            <nav class="sidebar-nav">
+                <a href="{% url 'admins:dashboard' %}" class="nav-item">
+                    <span class="icon">📊</span>
+                    <span>Dashboard</span>
+                </a>
+                <a href="{% url 'admins:bed_management' %}" class="nav-item">
+                    <span class="icon">🛏️</span>
+                    <span>Bed Management</span>
+                </a>
+                <a href="{% url 'admins:booking_management' %}" class="nav-item">
+                    <span class="icon">📋</span>
+                    <span>Bookings</span>
+                </a>
+                <a href="{% url 'admins:hospital_profile' %}" class="nav-item">
+                    <span class="icon">⚙️</span>
+                    <span>Hospital Profile</span>
+                </a>
+                <a href="{% url 'admins:activity_logs' %}" class="nav-item active">
+                    <span class="icon">📝</span>
+                    <span>Activity Logs</span>
+                </a>
+            </nav>
+
+            <div class="sidebar-footer">
+                <a href="{% url 'admins:logout' %}" class="btn btn-secondary btn-block">
+                    Logout
+                </a>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="admin-main">
+            <!-- Top Bar -->
+            <div class="admin-topbar">
+                <h1>Activity Logs</h1>
+            </div>
+
+            <!-- Page Content -->
+            <div class="admin-content">
+                {% if messages %}
+                    <div class="messages">
+                        {% for message in messages %}
+                            <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+
+                <section class="admin-section">
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <p class="stat-label">Total Logs</p>
+                            <p class="stat-value" id="totalLogs">0</p>
+                        </div>
+                        <div class="stat-card">
+                            <p class="stat-label">Today</p>
+                            <p class="stat-value" id="todayLogs">0</p>
+                        </div>
+                        <div class="stat-card">
+                            <p class="stat-label">This Week</p>
+                            <p class="stat-value" id="weekLogs">0</p>
+                        </div>
+                        <div class="stat-card">
+                            <p class="stat-label">Booking Logs</p>
+                            <p class="stat-value" id="bookingLogs">0</p>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="admin-section">
+                    <div class="filters-bar">
+                        <div class="form-group">
+                            <label for="filterInput">Search</label>
+                            <input type="text" id="filterInput" class="form-control" placeholder="Search logs">
+                        </div>
+                        <div class="form-group">
+                            <label for="typeFilter">Type</label>
+                            <select id="typeFilter" class="form-control">
+                                <option value="">All</option>
+                                <option value="bed">Bed Management</option>
+                                <option value="booking">Booking</option>
+                                <option value="profile">Profile Update</option>
+                                <option value="staff">Staff Management</option>
+                                <option value="login">Login/Logout</option>
+                                <option value="emergency">Emergency</option>
+                                <option value="other">Other</option>
+                            </select>
+                        </div>
+                        <div class="form-actions">
+                            <button type="button" class="btn btn-secondary" id="clearFilters">Clear Filters</button>
+                            <button type="button" class="btn btn-secondary" id="exportLogs">Export CSV</button>
+                            <form method="POST" action="{% url 'admins:clear_activity_logs' %}" id="clearLogsForm">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-danger">Clear Logs</button>
+                            </form>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Logs Table -->
+                <section class="admin-section">
+                    <div class="table-container">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Timestamp</th>
+                                    <th>Activity Type</th>
+                                    <th>Description</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="logsTableBody">
+                                {% for log in logs %}
+                                    <tr data-log-timestamp="{{ log.timestamp|date:"U" }}"
+                                        data-log-type="{{ log.type }}"
+                                        data-log-description="{{ log.description|lower }}">
+                                        <td>{{ log.timestamp|date:"M d, Y H:i:s" }}</td>
+                                        <td><span class="badge">{{ log.get_type_display }}</span></td>
+                                        <td>{{ log.description }}</td>
+                                        <td><span class="status-badge {{ log.status }}">{{ log.get_status_display }}</span></td>
+                                    </tr>
+                                {% empty %}
+                                    <tr><td colspan="4" class="empty-message">No activity logs</td></tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+            </div>
+        </main>
+    </div>
+
+    <script src="{% static 'js/admin-script.js' %}"></script>
+    <script>
+        function updateStats(rows) {
+            const now = Date.now();
+            const dayMs = 24 * 60 * 60 * 1000;
+            const weekMs = 7 * dayMs;
+
+            const total = rows.length;
+            const today = rows.filter(r => (now - (parseInt(r.dataset.logTimestamp, 10) * 1000)) < dayMs).length;
+            const week = rows.filter(r => (now - (parseInt(r.dataset.logTimestamp, 10) * 1000)) < weekMs).length;
+            const booking = rows.filter(r => r.dataset.logType === 'booking').length;
+
+            document.getElementById('totalLogs').textContent = total;
+            document.getElementById('todayLogs').textContent = today;
+            document.getElementById('weekLogs').textContent = week;
+            document.getElementById('bookingLogs').textContent = booking;
+        }
+
+        function applyLogFilters() {
+            const query = (document.getElementById('filterInput').value || '').toLowerCase().trim();
+            const type = document.getElementById('typeFilter').value || '';
+
+            const rows = Array.from(document.querySelectorAll('#logsTableBody tr[data-log-timestamp]'));
+            rows.forEach((row) => {
+                const matchesText = !query || (row.dataset.logDescription || '').includes(query);
+                const matchesType = !type || row.dataset.logType === type;
+                row.style.display = matchesText && matchesType ? '' : 'none';
+            });
+        }
+
+        function exportLogs() {
+            const rows = Array.from(document.querySelectorAll('#logsTableBody tr[data-log-timestamp]'))
+                .filter(row => row.style.display !== 'none');
+
+            if (rows.length === 0) {
+                alert('No logs to export');
+                return;
+            }
+
+            const headers = ['Timestamp', 'Type', 'Description', 'Status'];
+            const data = rows.map(row => [
+                row.children[0]?.textContent || '',
+                row.children[1]?.textContent || '',
+                row.children[2]?.textContent || '',
+                row.children[3]?.textContent || ''
+            ]);
+
+            const csv = [headers, ...data]
+                .map(row => row.map(cell => `"${cell}"`).join(','))
+                .join('\n');
+
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `hospital-activity-logs-${Date.now()}.csv`;
+            a.click();
+            window.URL.revokeObjectURL(url);
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const session = getAdminSession();
+            if (!session) {
+                window.location.href = getAdminLoginUrl();
+                return;
+            }
+
+            const rows = Array.from(document.querySelectorAll('#logsTableBody tr[data-log-timestamp]'));
+            updateStats(rows);
+
+            document.getElementById('filterInput').addEventListener('input', applyLogFilters);
+            document.getElementById('typeFilter').addEventListener('change', applyLogFilters);
+            document.getElementById('clearFilters').addEventListener('click', () => {
+                document.getElementById('filterInput').value = '';
+                document.getElementById('typeFilter').value = '';
+                applyLogFilters();
+            });
+            document.getElementById('exportLogs').addEventListener('click', exportLogs);
+            document.getElementById('clearLogsForm').addEventListener('submit', (event) => {
+                if (!confirm('Are you sure you want to clear all activity logs? This cannot be undone.')) {
+                    event.preventDefault();
+                }
+            });
+        });
+    </script>
+</body>
+</html>

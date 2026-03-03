@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+{% load static %}
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hospital Profile - Admin</title>
+    <link rel="stylesheet" href="{% static 'css/admin-styles.css' %}">
+</head>
+<body data-hospital-id="{{ hospital.id }}" data-admin-name="{{ request.session.admin_name|default:'' }}">
+    <div class="admin-container">
+        <!-- Sidebar Navigation -->
+        <aside class="admin-sidebar">
+            <div class="sidebar-header">
+                <h2>🏥 Admin Panel</h2>
+            </div>
+
+            <nav class="sidebar-nav">
+                <a href="{% url 'admins:dashboard' %}" class="nav-item">
+                    <span class="icon">📊</span>
+                    <span>Dashboard</span>
+                </a>
+                <a href="{% url 'admins:bed_management' %}" class="nav-item">
+                    <span class="icon">🛏️</span>
+                    <span>Bed Management</span>
+                </a>
+                <a href="{% url 'admins:booking_management' %}" class="nav-item">
+                    <span class="icon">📋</span>
+                    <span>Bookings</span>
+                </a>
+                <a href="{% url 'admins:hospital_profile' %}" class="nav-item active">
+                    <span class="icon">⚙️</span>
+                    <span>Hospital Profile</span>
+                </a>
+                <a href="{% url 'admins:activity_logs' %}" class="nav-item">
+                    <span class="icon">📝</span>
+                    <span>Activity Logs</span>
+                </a>
+            </nav>
+
+            <div class="sidebar-footer">
+                <a href="{% url 'admins:logout' %}" class="btn btn-secondary btn-block">
+                    Logout
+                </a>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="admin-main">
+            <!-- Top Bar -->
+            <div class="admin-topbar">
+                <h1>Hospital Profile</h1>
+            </div>
+
+            <!-- Page Content -->
+            <div class="admin-content">
+                <!-- Basic Information -->
+                <section class="admin-section">
+                    <h2>Basic Information</h2>
+
+                    <form method="POST" action="{% url 'admins:hospital_profile' %}" id="profileForm">
+                        {% csrf_token %}
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Hospital Name *</label>
+                                <input type="text" id="hospitalNameInput" name="name" value="{{ hospital.name }}" class="form-control" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Hospital Type</label>
+                                <input type="text" id="hospitalTypeInput" value="{{ hospital.hospital_type }}" class="form-control" placeholder="e.g., Multi-specialty, General, Specialty" disabled>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Hospital Description</label>
+                            <textarea id="hospitalDescriptionInput" name="description" class="form-control" rows="4">{{ hospital.description }}</textarea>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Phone Number *</label>
+                                <input type="tel" id="hospitalPhoneInput" name="phone" value="{{ hospital.phone }}" class="form-control" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Email Address</label>
+                                <input type="email" id="hospitalEmailInput" name="email" value="{{ hospital.email }}" class="form-control">
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Full Address *</label>
+                            <input type="text" id="hospitalAddressInput" name="address" value="{{ hospital.address }}" class="form-control" required>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Emergency Phone</label>
+                                <input type="tel" id="hospitalEmergencyInput" name="emergency_phone" value="{{ hospital.emergency_phone }}" class="form-control">
+                            </div>
+                            <div class="form-group">
+                                <label>Website</label>
+                                <input type="url" id="hospitalWebsiteInput" name="website" value="{{ hospital.website }}" class="form-control">
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Operating Hours</label>
+                            <input type="text" id="hospitalHoursInput" name="hours" value="{{ hospital.hours }}" class="form-control">
+                        </div>
+
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-primary">💾 Save Changes</button>
+                            <button type="reset" class="btn btn-secondary">Reset</button>
+                        </div>
+                    </form>
+                </section>
+
+                <!-- Hospital Images -->
+                <section class="admin-section">
+                    <h2>Hospital Images</h2>
+
+                    <div class="image-upload-area">
+                        <div class="upload-box">
+                            <p>🏥</p>
+                            <p>Main Hospital Image</p>
+                            <input type="file" class="file-input" accept="image/*">
+                            <button class="btn btn-small btn-secondary">Upload Image</button>
+                        </div>
+                    </div>
+
+                    <p class="info-text">Note: Image upload feature is prepared for future implementation.</p>
+                </section>
+
+                <!-- Wards and Departments -->
+                <section class="admin-section">
+                    <h2>Wards and Departments</h2>
+
+                    <div class="ward-list" id="wardList">
+                        <!-- Generated by JavaScript -->
+                    </div>
+
+                    <button class="btn btn-secondary" onclick="addWard()">➕ Add Ward</button>
+                </section>
+
+                <!-- Key Staff -->
+                <section class="admin-section">
+                    <h2>Key Medical Staff</h2>
+
+                    <div id="staffList" class="staff-list">
+                        <!-- Generated by JavaScript -->
+                    </div>
+
+                    <button class="btn btn-secondary" onclick="showAddStaffForm()">➕ Add Staff Member</button>
+                </section>
+
+                <!-- Booking Settings -->
+                <section class="admin-section">
+                    <h2>Booking Settings</h2>
+
+                    <div class="settings-form">
+                        <div class="form-group">
+                            <label>Reservation Duration (minutes)</label>
+                            <input type="number" id="reservationDuration" class="form-control" value="45" min="15" max="180">
+                        </div>
+
+                        <div class="form-group checkbox">
+                            <input type="checkbox" id="allowEmergencyBooking" checked>
+                            <label for="allowEmergencyBooking">Allow Emergency Department bookings</label>
+                        </div>
+
+                        <div class="form-group checkbox">
+                            <input type="checkbox" id="requireMinBeds" checked>
+                            <label for="requireMinBeds">Require minimum 20 beds available for booking</label>
+                        </div>
+
+                        <button class="btn btn-primary" onclick="saveBookingSettings()">💾 Save Settings</button>
+                    </div>
+                </section>
+            </div>
+        </main>
+    </div>
+
+    <!-- Add Staff Modal -->
+    <div id="addStaffModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Add Staff Member</h2>
+                <button class="modal-close" onclick="closeModal('addStaffModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form onsubmit="handleAddStaff(event)">
+                    <div class="form-group">
+                        <label>Full Name *</label>
+                        <input type="text" id="staffName" class="form-control" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Title/Position *</label>
+                        <input type="text" id="staffTitle" class="form-control" placeholder="e.g., Chief of Medicine" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Department</label>
+                        <input type="text" id="staffDept" class="form-control" placeholder="e.g., Surgery, Cardiology">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Contact (Optional)</label>
+                        <input type="email" id="staffContact" class="form-control" placeholder="Email or phone">
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary">Add Staff</button>
+                        <button type="button" class="btn btn-secondary" onclick="closeModal('addStaffModal')">Cancel</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="{% static 'js/admin-script.js' %}"></script>
+    <script>
+        window.addEventListener('load', function() {
+            const session = getAdminSession();
+            if (!session) {
+                window.location.href = getAdminLoginUrl();
+                return;
+            }
+
+            loadHospitalProfile();
+            loadStaffList();
+            loadWardList();
+        });
+
+        function loadHospitalProfile() {
+            const hospitalData = getHospitalData();
+
+            function setIfEmpty(id, value) {
+                const el = document.getElementById(id);
+                if (!el) return;
+                if (el.value && el.value.trim() !== '') return;
+                el.value = value || '';
+            }
+
+            setIfEmpty('hospitalNameInput', hospitalData.name);
+            setIfEmpty('hospitalTypeInput', hospitalData.type);
+            setIfEmpty('hospitalDescriptionInput', hospitalData.description);
+            setIfEmpty('hospitalPhoneInput', hospitalData.phone);
+            setIfEmpty('hospitalEmergencyInput', hospitalData.emergency);
+            setIfEmpty('hospitalEmailInput', hospitalData.email);
+            setIfEmpty('hospitalAddressInput', hospitalData.address);
+            setIfEmpty('hospitalWebsiteInput', hospitalData.website);
+            setIfEmpty('hospitalHoursInput', hospitalData.hours || '24/7');
+        }
+
+        function saveHospitalProfile(event) {
+            event.preventDefault();
+
+            const hospitalData = getHospitalData();
+
+            hospitalData.name = document.getElementById('hospitalNameInput').value;
+            hospitalData.type = document.getElementById('hospitalTypeInput').value;
+            hospitalData.description = document.getElementById('hospitalDescriptionInput').value;
+            hospitalData.phone = document.getElementById('hospitalPhoneInput').value;
+            hospitalData.emergency = document.getElementById('hospitalEmergencyInput').value;
+            hospitalData.email = document.getElementById('hospitalEmailInput').value;
+            hospitalData.address = document.getElementById('hospitalAddressInput').value;
+            hospitalData.website = document.getElementById('hospitalWebsiteInput').value;
+            hospitalData.hours = document.getElementById('hospitalHoursInput').value;
+
+            saveHospitalData(hospitalData);
+            logActivity('Updated hospital profile information');
+            showNotification('Hospital profile updated successfully', 'success');
+        }
+
+        function resetForm() {
+            loadHospitalProfile();
+        }
+
+        function loadStaffList() {
+            const hospitalData = getHospitalData();
+            const staffList = document.getElementById('staffList');
+
+            if (!hospitalData.staff || hospitalData.staff.length === 0) {
+                staffList.innerHTML = '<p class="empty-message">No staff members added yet</p>';
+                return;
+            }
+
+            staffList.innerHTML = hospitalData.staff.map((staff, index) => `
+                <div class="staff-card">
+                    <div class="staff-info">
+                        <h4>${staff.name}</h4>
+                        <p class="title">${staff.title}</p>
+                        ${staff.department ? `<p class="dept">${staff.department}</p>` : ''}
+                        ${staff.contact ? `<p class="contact">${staff.contact}</p>` : ''}
+                    </div>
+                    <button class="btn btn-tiny btn-danger" onclick="removeStaff(${index})">Remove</button>
+                </div>
+            `).join('');
+        }
+
+        function showAddStaffForm() {
+            document.getElementById('addStaffModal').style.display = 'block';
+            document.getElementById('staffName').focus();
+        }
+
+        function handleAddStaff(event) {
+            event.preventDefault();
+
+            const hospitalData = getHospitalData();
+            if (!hospitalData.staff) hospitalData.staff = [];
+
+            const staff = {
+                name: document.getElementById('staffName').value,
+                title: document.getElementById('staffTitle').value,
+                department: document.getElementById('staffDept').value,
+                contact: document.getElementById('staffContact').value
+            };
+
+            hospitalData.staff.push(staff);
+            saveHospitalData(hospitalData);
+
+            logActivity(`Added staff member: ${staff.name}`);
+            showNotification('Staff member added successfully', 'success');
+
+            closeModal('addStaffModal');
+            document.getElementById('staffName').value = '';
+            document.getElementById('staffTitle').value = '';
+            document.getElementById('staffDept').value = '';
+            document.getElementById('staffContact').value = '';
+
+            loadStaffList();
+        }
+
+        function removeStaff(index) {
+            if (!confirm('Are you sure you want to remove this staff member?')) {
+                return;
+            }
+
+            const hospitalData = getHospitalData();
+            const removedName = hospitalData.staff[index].name;
+            hospitalData.staff.splice(index, 1);
+            saveHospitalData(hospitalData);
+
+            logActivity(`Removed staff member: ${removedName}`);
+            showNotification('Staff member removed', 'success');
+            loadStaffList();
+        }
+
+        function loadWardList() {
+            const hospitalData = getHospitalData();
+            const wardList = document.getElementById('wardList');
+
+            const wards = [
+                { name: 'General Ward', beds: hospitalData.beds.general.total },
+                { name: 'HDU', beds: hospitalData.beds.hdu.total },
+                { name: 'ICU', beds: hospitalData.beds.icu.total },
+                { name: 'Emergency', beds: hospitalData.beds.emergency.total }
+            ];
+
+            wardList.innerHTML = wards.map(ward => `
+                <div class="ward-card">
+                    <h4>${ward.name}</h4>
+                    <p>Total Beds: <strong>${ward.beds}</strong></p>
+                </div>
+            `).join('');
+        }
+
+        function addWard() {
+            alert('Ward management will be available in a future update.');
+        }
+
+        function saveBookingSettings() {
+            const hospitalData = getHospitalData();
+            hospitalData.settings = {
+                reservationDuration: parseInt(document.getElementById('reservationDuration').value),
+                allowEmergencyBooking: document.getElementById('allowEmergencyBooking').checked,
+                requireMinBeds: document.getElementById('requireMinBeds').checked
+            };
+
+            saveHospitalData(hospitalData);
+            logActivity('Updated booking settings');
+            showNotification('Booking settings saved', 'success');
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).style.display = 'none';
+        }
+    </script>
+</body>
+</html>

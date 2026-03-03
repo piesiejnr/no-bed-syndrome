@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+{% load static %}
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Search for a Hospital</title>
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+                <div class="header-content">
+                <a href="{% url 'hospital:index' %}" class="logo">🏥 Life Saver</a>
+                <nav class="nav">
+                    <a href="{% url 'hospital:index' %}" class="nav-link">Home</a>
+                    <a href="{% url 'hospital:search' %}" class="nav-link active">Search</a>
+                    <a href="{% url 'hospital:nearby' %}" class="nav-link">Near Me</a>
+                </nav>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Search Section -->
+            <section class="search-section">
+                <h1 class="page-title">Search for a Hospital</h1>
+                <div class="search-container">
+                    <form method="get" action="{% url 'hospital:search' %}" class="search-container">
+                        <input 
+                            type="text" 
+                            id="searchInput" 
+                            name="q"
+                            value="{{ query|default:'' }}"
+                            class="search-input" 
+                            placeholder="Enter hospital name or location..."
+                            autocomplete="off"
+                        >
+                        <button class="search-btn" type="submit">Search</button>
+                    </form>
+                </div>
+            </section>
+
+            <!-- Search Results -->
+            <section class="results-section">
+                    <div id="resultsContainer" class="results-container">
+                        {% if hospitals and hospitals.exists %}
+                            {% for hospital in hospitals %}
+                                <div class="hospital-card">
+                                    <div class="hospital-header">
+                                        <div class="hospital-title">
+                                            <h3>{{ hospital.name }}</h3>
+                                            <p class="hospital-location">📍 {{ hospital.address }}</p>
+                                        </div>
+                                    </div>
+
+                                    <div class="bed-availability">
+                                        <h4>Available Beds by Type</h4>
+                                        <div class="bed-types">
+                                            {% for bed in hospital.beds.all %}
+                                                <div class="bed-type">
+                                                    <span class="bed-label">{{ bed.get_bed_type_display }}</span>
+                                                    <span class="bed-count {{ bed.status }}">{{ bed.available }}/{{ bed.total }}</span>
+                                                </div>
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+
+                                    <div class="hospital-contact">
+                                        <p>📞 {{ hospital.phone }}</p>
+                                        <p>📧 {{ hospital.email }}</p>
+                                    </div>
+
+                                    <a href="{% url 'hospital:hospital_detail' hospital.pk %}" class="btn btn-primary">View Hospital Details</a>
+                                </div>
+                            {% endfor %}
+                        {% else %}
+                            <p class="empty-state">Enter a hospital name to search</p>
+                        {% endif %}
+                    </div>
+            </section>
+        </main>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <p>&copy; 2026 Hospital Bed Coordination System. All rights reserved.</p>
+        </footer>
+    </div>
+
+    <script src="{% static 'js/script.js' %}"></script>
+</body>
+</html>

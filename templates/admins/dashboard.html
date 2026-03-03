@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+{% load static %}
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - Hospital Bed Coordination</title>
+    <link rel="stylesheet" href="{% static 'css/admin-styles.css' %}">
+</head>
+<body data-hospital-id="{{ hospital.id }}" data-admin-name="{{ request.session.admin_name|default:'' }}">
+    <div class="admin-container">
+        <!-- Sidebar Navigation -->
+        <aside class="admin-sidebar">
+            <div class="sidebar-header">
+                <h2>🏥 Admin Panel</h2>
+            </div>
+
+            <nav class="sidebar-nav">
+                <a href="{% url 'admins:dashboard' %}" class="nav-item active">
+                    <span class="icon">📊</span>
+                    <span>Dashboard</span>
+                </a>
+                <a href="{% url 'admins:bed_management' %}" class="nav-item">
+                    <span class="icon">🛏️</span>
+                    <span>Bed Management</span>
+                </a>
+                <a href="{% url 'admins:booking_management' %}" class="nav-item">
+                    <span class="icon">📋</span>
+                    <span>Bookings</span>
+                </a>
+                <a href="{% url 'admins:hospital_profile' %}" class="nav-item">
+                    <span class="icon">⚙️</span>
+                    <span>Hospital Profile</span>
+                </a>
+                <a href="{% url 'admins:activity_logs' %}" class="nav-item">
+                    <span class="icon">📝</span>
+                    <span>Activity Logs</span>
+                </a>
+            </nav>
+
+            <div class="sidebar-footer">
+                <a href="{% url 'admins:logout' %}" class="btn btn-secondary btn-block">
+                    Logout
+                </a>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="admin-main">
+            <!-- Top Bar -->
+            <div class="admin-topbar">
+                <h1>{{ hospital.name }} Dashboard</h1>
+                <div class="topbar-info">
+                    <span class="status-indicator">🟢 Online</span>
+                    <span id="currentTime"></span>
+                </div>
+            </div>
+
+            <!-- Dashboard Content -->
+            <div class="dashboard-content">
+                <!-- Bed Availability Overview -->
+                <section class="dashboard-section">
+                    <div class="section-header">
+                        <h2>Real-Time Bed Availability</h2>
+                    </div>
+
+                    <div class="slider-wrapper">
+                        <button class="slider-btn slider-prev" id="sliderPrevBtn" title="Previous">❮</button>
+                        <div class="slider-container" id="bedSlider">
+                            <div class="slider-track bed-overview-grid">
+                        {% for bed in beds %}
+                            <div class="bed-card">
+                                <div class="bed-card-header">
+                                    <h3>{{ bed.get_bed_type_display }}</h3>
+                                    <span class="utilization-badge">{{ bed.utilization_percent }}% Utilized</span>
+                                </div>
+
+                                <div class="bed-stats">
+                                    <div class="bed-stat">
+                                        <span class="stat-label">Total</span>
+                                        <span class="stat-number">{{ bed.total }}</span>
+                                    </div>
+                                    <div class="bed-stat available">
+                                        <span class="stat-label">Available</span>
+                                        <span class="stat-number">{{ bed.available }}</span>
+                                    </div>
+                                    <div class="bed-stat occupied">
+                                        <span class="stat-label">Occupied</span>
+                                        <span class="stat-number">{{ bed.occupied }}</span>
+                                    </div>
+                                    <div class="bed-stat reserved">
+                                        <span class="stat-label">Reserved</span>
+                                        <span class="stat-number">{{ bed.reserved }}</span>
+                                    </div>
+                                </div>
+
+                                <div class="progress-bar">
+                                    <div class="progress-segment available" style="width: {% widthratio bed.available bed.total 100 %}%"></div>
+                                    <div class="progress-segment occupied" style="width: {% widthratio bed.occupied bed.total 100 %}%"></div>
+                                    <div class="progress-segment reserved" style="width: {% widthratio bed.reserved bed.total 100 %}%"></div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                            </div>
+                        </div>
+                        <button class="slider-btn slider-next" id="sliderNextBtn" title="Next">❯</button>
+                    </div>
+                    <div class="slider-indicator" id="sliderIndicator">
+                        <span class="indicator-text"><span id="currentBedIndex">1</span> of <span id="totalBeds">{{ beds|length }}</span></span>
+                    </div>
+                </section>
+
+                <!-- Quick Stats -->
+                <section class="dashboard-section">
+                    <h2>Summary Statistics</h2>
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <p class="stat-label">Total Beds</p>
+                            <p class="stat-value">{{ total_beds|default:0 }}</p>
+                        </div>
+                        <div class="stat-card">
+                            <p class="stat-label">Active Bookings</p>
+                            <p class="stat-value available">{{ bookings.count|default:0 }}</p>
+                        </div>
+                        <div class="stat-card">
+                            <p class="stat-label">Staff Members</p>
+                            <p class="stat-value">{{ staff.count|default:0 }}</p>
+                        </div>
+                        <div class="stat-card">
+                            <p class="stat-label">Average Rating</p>
+                            <p class="stat-value">⭐ {{ avg_rating|default:"N/A" }}</p>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Recent Bookings -->
+                <section class="dashboard-section">
+                    <div class="section-header">
+                        <h2>Recent Bookings</h2>
+                        <a href="{% url 'admins:booking_management' %}" class="link-button">View All →</a>
+                    </div>
+
+                    <div class="table-container">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Contact</th>
+                                    <th>Bed Type</th>
+                                    <th>Status</th>
+                                    <th>Booked Date</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for booking in bookings %}
+                                    <tr>
+                                        <td>{{ booking.name }}</td>
+                                        <td>{{ booking.contact }}</td>
+                                        <td><span class="bed-type-badge">{{ booking.get_bed_type_display }}</span></td>
+                                        <td><span class="status-badge {{ booking.status }}">{{ booking.get_status_display }}</span></td>
+                                        <td>{{ booking.booked_at|date:"M d, Y H:i" }}</td>
+                                    </tr>
+                                {% empty %}
+                                    <tr><td colspan="5" class="empty-message">No recent bookings</td></tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <!-- Recent Activity -->
+                <section class="dashboard-section">
+                    <div class="section-header">
+                        <h2>Recent Activity</h2>
+                        <a href="{% url 'admins:activity_logs' %}" class="link-button">View All →</a>
+                    </div>
+
+                    <div class="activity-list">
+                        {% for log in activity_logs %}
+                            <div class="activity-item">
+                                <span class="activity-type">{{ log.get_type_display }}</span>
+                                <p class="activity-description">{{ log.description }}</p>
+                                <span class="activity-time">{{ log.timestamp|date:"M d, Y H:i" }}</span>
+                            </div>
+                        {% empty %}
+                            <p class="empty-message">No activity yet</p>
+                        {% endfor %}
+                    </div>
+                </section>
+
+                <!-- Quick Actions -->
+                <section class="dashboard-section">
+                    <h2>Quick Actions</h2>
+                    <div class="quick-actions">
+                        <a href="{% url 'admins:bed_management' %}" class="action-card">
+                            <span class="action-icon">🛏️</span>
+                            <span class="action-text">Manage Beds</span>
+                        </a>
+                        <a href="{% url 'admins:booking_management' %}" class="action-card">
+                            <span class="action-icon">📋</span>
+                            <span class="action-text">View Bookings</span>
+                        </a>
+                        <a href="{% url 'admins:hospital_profile' %}" class="action-card">
+                            <span class="action-icon">⚙️</span>
+                            <span class="action-text">Hospital Settings</span>
+                        </a>
+                        <a href="{% url 'admins:activity_logs' %}" class="action-card">
+                            <span class="action-icon">📊</span>
+                            <span class="action-text">View Logs</span>
+                        </a>
+                    </div>
+                </section>
+            </div>
+        </main>
+    </div>
+
+    <script src="{% static 'js/admin-script.js' %}"></script>
+    <script>
+        // Global functions for arrow buttons
+        function getCardWidth() {
+            const slider = document.getElementById('bedSlider');
+            if (!slider) return 0;
+            const card = slider.querySelector('.bed-card');
+            if (!card) return 0;
+            const width = card.offsetWidth;
+            const style = window.getComputedStyle(slider);
+            const gap = parseInt(style.gap) || 24;
+            return width + gap;
+        }
+
+        function slideBedsLeft() {
+            console.log('slideBedsLeft called');
+            const slider = document.getElementById('bedSlider');
+            if (!slider) {
+                console.error('Slider not found');
+                return;
+            }
+            const cardWidth = getCardWidth();
+            console.log('Card width:', cardWidth, 'Current scroll:', slider.scrollLeft);
+            if (cardWidth === 0) {
+                console.error('Card width is 0');
+                return;
+            }
+            const newPosition = slider.scrollLeft - cardWidth;
+            console.log('Scrolling to:', newPosition);
+            slider.scrollTo({ left: newPosition, behavior: 'smooth' });
+        }
+
+        function slideBedsRight() {
+            console.log('slideBedsRight called');
+            const slider = document.getElementById('bedSlider');
+            if (!slider) {
+                console.error('Slider not found');
+                return;
+            }
+            const cardWidth = getCardWidth();
+            console.log('Card width:', cardWidth, 'Current scroll:', slider.scrollLeft);
+            if (cardWidth === 0) {
+                console.error('Card width is 0');
+                return;
+            }
+            const newPosition = slider.scrollLeft + cardWidth;
+            console.log('Scrolling to:', newPosition);
+            slider.scrollTo({ left: newPosition, behavior: 'smooth' });
+        }
+
+        function updateBedIndicator() {
+            const slider = document.getElementById('bedSlider');
+            if (!slider) return;
+            const cardWidth = getCardWidth();
+            if (cardWidth === 0) return;
+            const currentIndex = Math.round(slider.scrollLeft / cardWidth) + 1;
+            const indicator = document.getElementById('currentBedIndex');
+            if (indicator) indicator.textContent = currentIndex;
+        }
+
+        function updateClock() {
+            const now = new Date();
+            const timeEl = document.getElementById('currentTime');
+            if (timeEl) timeEl.textContent = now.toLocaleTimeString();
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const session = getAdminSession();
+            if (!session) {
+                window.location.href = getAdminLoginUrl();
+                return;
+            }
+
+            updateClock();
+            setInterval(updateClock, 1000);
+
+            const slider = document.getElementById('bedSlider');
+            if (slider) {
+                slider.addEventListener('scroll', updateBedIndicator);
+                // Initialize indicator with a slight delay to ensure cards are rendered
+                setTimeout(function() {
+                    console.log('Initializing bed indicator');
+                    const cardWidth = getCardWidth();
+                    console.log('Initial card width:', cardWidth);
+                    const card = slider.querySelector('.bed-card');
+                    if (card) {
+                        console.log('First card offsetWidth:', card.offsetWidth);
+                        console.log('Slider offsetWidth:', slider.offsetWidth);
+                        console.log('Slider scrollWidth:', slider.scrollWidth);
+                    }
+                    updateBedIndicator();
+                }, 100);
+            }
+
+            // Add event listeners to navigation buttons
+            const prevBtn = document.getElementById('sliderPrevBtn');
+            const nextBtn = document.getElementById('sliderNextBtn');
+            
+            console.log('Button setup - prevBtn:', prevBtn, 'nextBtn:', nextBtn);
+            
+            if (prevBtn) {
+                prevBtn.addEventListener('click', function(e) {
+                    console.log('Prev button clicked', e);
+                    slideBedsLeft();
+                });
+            }
+            if (nextBtn) {
+                nextBtn.addEventListener('click', function(e) {
+                    console.log('Next button clicked', e);
+                    slideBedsRight();
+                });
+            }
+        });

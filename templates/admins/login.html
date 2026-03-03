@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+{% load static %}
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Login - Hospital Bed Coordination</title>
+    <link rel="stylesheet" href="{% static 'css/admin-styles.css' %}">
+</head>
+<body class="login-page">
+    <div class="login-container">
+        <div class="login-card">
+            <div class="login-header">
+                <h1>🏥 MediCare Admin</h1>
+                <p>Hospital Management System</p>
+            </div>
+
+            {% if messages %}
+                <div class="messages">
+                    {% for message in messages %}
+                        <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+
+            <form class="login-form" method="POST" action="{% url 'admins:login' %}">
+                {% csrf_token %}
+                <div class="form-group">
+                    <label for="hospital">Select Hospital:</label>
+                    <select id="hospital" name="hospital" class="form-control" required>
+                        <option value="">-- Select a Hospital --</option>
+                        {% for hospital in hospitals %}
+                            <option value="{{ hospital.id }}">{{ hospital.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="code">Admin Code:</label>
+                    <input 
+                        type="password" 
+                        id="code" 
+                        name="code"
+                        class="form-control" 
+                        placeholder="Enter admin code"
+                        required
+                    >
+                </div>
+
+                <button type="submit" class="btn btn-primary btn-block">
+                    Login to Dashboard
+                </button>
+            </form>
+
+            <div class="login-info">
+                <p><strong>Contact your hospital administrator for access credentials</strong></p>
+            </div>
+        </div>
+    </div>

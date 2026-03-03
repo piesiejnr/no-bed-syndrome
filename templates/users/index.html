@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+{% load static %}
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hospital Bed Coordination System</title>
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <h1 class="logo">🏥 Life Saver</h1>
+                <nav class="nav">
+                    <a href="{% url 'hospital:index' %}" class="nav-link active">Home</a>
+                    <a href="{% url 'hospital:search' %}" class="nav-link">Search</a>
+                    <a href="{% url 'hospital:nearby' %}" class="nav-link">Near Me</a>
+                </nav>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Hero Section -->
+            <section class="hero">
+                <div class="hero-content">
+                    <h2 class="hero-title">Find Hospital Beds When You Need Them Most</h2>
+                    <p class="hero-subtitle">Quick access to available beds across trusted hospitals. Simple, fast, and reliable.</p>
+                </div>
+            </section>
+
+            <!-- Quick Access Links -->
+            <section class="quick-access">
+                <div class="quick-access-grid">
+                    <a href="{% url 'hospital:search' %}" class="quick-access-card">
+                        <div class="card-icon">🔍</div>
+                        <h3>Search for a Hospital</h3>
+                        <p>Find hospitals by name and check available beds instantly</p>
+                    </a>
+                    <a href="{% url 'hospital:nearby' %}" class="quick-access-card">
+                        <div class="card-icon">📍</div>
+                        <h3>Find Hospitals Near Me</h3>
+                        <p>Discover nearby hospitals with available beds on an interactive map</p>
+                    </a>
+                </div>
+            </section>
+
+            {% comment %} {% if hospitals and hospitals.exists %}
+            <section class="featured-hospitals">
+                <h2 class="section-title">Featured Hospitals</h2>
+                <div class="hospitals-grid">
+                    {% for hospital in hospitals %}
+                        <div class="hospital-card">
+                            <h3>{{ hospital.name }}</h3>
+                            <p class="hospital-location">📍 {{ hospital.address }}</p>
+                            <p class="hospital-summary">{{ hospital.description|truncatewords:20 }}</p>
+                            <a href="{% url 'hospital:hospital_detail' hospital.pk %}" class="btn btn-primary">View Details</a>
+                        </div>
+                    {% endfor %}
+                </div>
+            </section>
+            {% endif %} {% endcomment %}
+
+            <!-- Services Section -->
+            <section class="services">
+                <h2 class="section-title">Our Services</h2>
+                <div class="services-grid">
+                    <div class="service-card">
+                        <div class="service-icon">🛏️</div>
+                        <h3>Bed Availability</h3>
+                        <p>Check real-time availability of hospital beds across different wards including General, HDU, ICU, and Emergency departments.</p>
+                    </div>
+                    <div class="service-card">
+                        <div class="service-icon">🏠</div>
+                        <h3>Book Home Services</h3>
+                        <p>Request and arrange healthcare services at home, from nursing care to medical consultations with qualified professionals.</p>
+                    </div>
+                    <div class="service-card">
+                        <div class="service-icon">📅</div>
+                        <h3>Appointment Scheduling</h3>
+                        <p>Schedule hospital appointments in advance and get confirmation with estimated wait times and doctor information.</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Info Section -->
+            <section class="info-section">
+                <h2 class="section-title">Why Choose Us?</h2>
+                <div class="info-cards">
+                    <div class="info-card">
+                        <h3>⚡ Fast & Reliable</h3>
+                        <p>Get real-time updates on bed availability to make quick decisions during emergencies.</p>
+                    </div>
+                    <div class="info-card">
+                        <h3>🏥 Trusted Hospitals</h3>
+                        <p>Access a network of verified and trusted healthcare providers in your area.</p>
+                    </div>
+                    <div class="info-card">
+                        <h3>📱 Easy to Use</h3>
+                        <p>Simple interface designed for quick access when every minute counts.</p>
+                    </div>
+                    <div class="info-card">
+                        <h3>🗺️ Location Based</h3>
+                        <p>Find the nearest hospitals with available beds, complete with directions.</p>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <p>&copy; 2026 Hospital Bed Coordination System. All rights reserved.</p>
+            <p>Emergency? Call 911 or your local emergency number.</p>
+        </footer>
+    </div>
+</body>
+</html>

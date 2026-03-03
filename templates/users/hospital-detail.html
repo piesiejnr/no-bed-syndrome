@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+{% load static %}
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hospital Details</title>
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <a href="{% url 'hospital:index' %}" class="logo">🏥 Life Saver</a>
+                <nav class="nav">
+                    <a href="{% url 'hospital:index' %}" class="nav-link">Home</a>
+                    <a href="{% url 'hospital:search' %}" class="nav-link">Search</a>
+                    <a href="{% url 'hospital:nearby' %}" class="nav-link">Near Me</a>
+                </nav>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <div id="detailContainer" class="detail-container">
+                <div class="hospital-detail">
+                    <section class="detail-hero">
+                        <div class="hospital-image-placeholder">🏥</div>
+                        <div class="hospital-header-detail">
+                            <h1>{{ hospital_obj.name }}</h1>
+                            <p class="rating">{% if avg_rating %}⭐ {{ avg_rating }}/5{% endif %}</p>
+                            <p class="location">📍 {{ hospital_obj.address }}</p>
+                        </div>
+                    </section>
+
+                    <div class="detail-grid">
+                        <div class="detail-column-left">
+                            <section class="detail-section">
+                                <h2>About Hospital</h2>
+                                <p>{{ hospital_obj.description }}</p>
+                            </section>
+
+                            <section class="detail-section">
+                                <h2>Contact Information</h2>
+                                <div class="contact-info">
+                                    <p><strong>📞 Phone:</strong> {{ hospital_obj.phone }}</p>
+                                    <p><strong>📧 Email:</strong> {{ hospital_obj.email }}</p>
+                                    <p><strong>🌐 Website:</strong> {{ hospital_obj.website }}</p>
+                                    <p><strong>📍 Address:</strong> {{ hospital_obj.address }}</p>
+                                </div>
+                            </section>
+
+                            <section class="detail-section">
+                                <h2>Key Medical Staff</h2>
+                                <div class="staff-list">
+                                    {% for staff in hospital_obj.staff.all %}
+                                        <div class="staff-member">
+                                            <p class="staff-name">👨‍⚕️ {{ staff.name }}</p>
+                                            <p class="staff-title">{{ staff.title }}</p>
+                                        </div>
+                                    {% empty %}
+                                        <p class="empty-message">No staff listed</p>
+                                    {% endfor %}
+                                </div>
+                            </section>
+                        </div>
+
+                        <div class="detail-column-right">
+                            <section class="detail-section bed-section">
+                                <h2>Bed Availability</h2>
+                                <div class="bed-details-grid">
+                                    {% for bed in hospital_obj.beds.all %}
+                                        <div class="bed-detail-card {% if bed.bed_type == 'emergency' %}emergency{% endif %}">
+                                            <h4>{{ bed.get_bed_type_display }}</h4>
+                                            <p class="bed-number">{{ bed.available }}/{{ bed.total }}</p>
+                                            <p class="bed-status {{ bed.status }}">● {{ bed.status }}</p>
+                                            {% if bed.bed_type != 'emergency' and bed.available >= 20 and not bed.booking_disabled %}
+                                                <button class="btn btn-primary btn-small">Book Bed</button>
+                                            {% elif bed.bed_type != 'emergency' %}
+                                                <p class="booking-disabled">⚠️ Booking disabled - Less than 20 beds available</p>
+                                            {% else %}
+                                                <p class="booking-disabled">🚨 View only - Emergency beds cannot be reserved</p>
+                                            {% endif %}
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                            </section>
+
+                            <section class="detail-section">
+                                <div class="action-buttons-grid">
+                                    <a href="{% url 'hospital:directions' hospital_obj.pk %}" class="btn btn-secondary">🗺️ Get Directions</a>
+                                    <a href="{% url 'hospital:search' %}" class="btn btn-secondary">🔍 Search Other Hospitals</a>
+                                </div>
+                            </section>
+                        </div>
+                    </div>
+
+                    <section class="detail-section full-width">
+                        <h2>Patient Reviews</h2>
+                        <div class="reviews-container">
+                            {% for review in hospital_obj.reviews.all %}
+                                <div class="review-card">
+                                    <div class="review-header">
+                                        <p class="review-author">👤 {{ review.author_name }}</p>
+                                            <p class="review-rating">{{ review.rating }}/5</p>
+                                    </div>
+                                    <p class="review-comment">"{{ review.comment }}"</p>
+                                </div>
+                            {% empty %}
+                                <p class="empty-message">No reviews yet</p>
+                            {% endfor %}
+                        </div>
+                    </section>
+                </div>
+            </div>
+        </main>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <p>&copy; 2026 Hospital Bed Coordination System. All rights reserved.</p>
+        </footer>
+    </div>
+
+    <script src="{% static 'js/script.js' %}"></script>
+    <!-- Server-rendered hospital detail -->
+</body>
+</html>

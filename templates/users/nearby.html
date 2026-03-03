@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+{% load static %}
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Find Hospitals Near Me</title>
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+                <div class="header-content">
+                <a href="{% url 'hospital:index' %}" class="logo">🏥 Life Saver</a>
+                <nav class="nav">
+                    <a href="{% url 'hospital:index' %}" class="nav-link">Home</a>
+                    <a href="{% url 'hospital:search' %}" class="nav-link">Search</a>
+                    <a href="{% url 'hospital:nearby' %}" class="nav-link active">Near Me</a>
+                </nav>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Page Title -->
+            <section class="search-section">
+                <h1 class="page-title">Hospitals Near You</h1>
+                <p class="subtitle">Sorted by proximity - Find the nearest hospital with available beds</p>
+            </section>
+
+            <!-- Content Layout -->
+            <div class="nearby-layout">
+                <!-- Map Section -->
+                <section class="map-section">
+                    <div class="map-container" id="mapContainer">
+                        <div class="map-placeholder">
+                            <div class="map-grid">
+                                <!-- Simulated map with hospital markers -->
+                                <div class="map-marker" style="top: 20%; left: 30%;">
+                                    <div class="marker-pin">📍</div>
+                                    <div class="marker-label">2.3 km</div>
+                                </div>
+                                <div class="map-marker" style="top: 40%; left: 60%;">
+                                    <div class="marker-pin">📍</div>
+                                    <div class="marker-label">4.1 km</div>
+                                </div>
+                                <div class="map-marker" style="top: 60%; left: 40%;">
+                                    <div class="marker-pin">📍</div>
+                                    <div class="marker-label">5.8 km</div>
+                                </div>
+                                <div class="map-marker" style="top: 35%; left: 75%;">
+                                    <div class="marker-pin">📍</div>
+                                    <div class="marker-label">6.5 km</div>
+                                </div>
+                                <div class="user-location">📍 You are here</div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Hospitals List Section -->
+                <section class="hospitals-list-section">
+                    <div id="hospitalsListContainer" class="hospitals-list-container">
+                        {% if hospitals and hospitals.exists %}
+                            {% for hospital in hospitals %}
+                                <div class="nearby-hospital-card">
+                                    <div class="distance-badge">{{ hospital.distance|default:"--" }} km away</div>
+                                    <div class="hospital-header">
+                                        <h3>{{ hospital.name }}</h3>
+                                        <p class="hospital-location">📍 {{ hospital.address }}</p>
+                                    </div>
+
+                                    <div class="bed-availability-compact">
+                                        {% for bed in hospital.beds.all %}
+                                            <div class="bed-type-compact">
+                                                <span>{{ bed.get_bed_type_display }}: <strong>{{ bed.available }}/{{ bed.total }}</strong></span>
+                                            </div>
+                                        {% endfor %}
+                                    </div>
+
+                                    <div class="hospital-contact">
+                                        <p>📞 {{ hospital.phone }}</p>
+                                        <p>📧 {{ hospital.email }}</p>
+                                    </div>
+
+                                    <div class="action-buttons">
+                                        <a href="{% url 'hospital:directions' hospital.pk %}" class="btn btn-secondary">🗺️ Directions</a>
+                                        <a href="{% url 'hospital:hospital_detail' hospital.pk %}" class="btn btn-primary">View Details</a>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        {% else %}
+                            <p class="empty-state">No nearby hospitals found</p>
+                        {% endif %}
+                    </div>
+                </section>
+            </div>
+        </main>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <p>&copy; 2026 Hospital Bed Coordination System. All rights reserved.</p>
+        </footer>
+    </div>
+
+    <script src="{% static 'js/script.js' %}"></script>
+    <script>
+        // Nearby hospitals are rendered server-side using `hospitals` context
+    </script>
+</body>
+</html>
